@@ -12,70 +12,145 @@
  #include <avr/io.h>
  #include <avr/interrupt.h>
  
- void motor(uint8_t num, int8_t speed) {
-    float kp = 0.3; 
-    int full_speed = (kp + 127); 
-    int curr_speed = 0; 
-    char print_speed = (char)malloc(4); // allocate memory for motor speed string
+ // Motor power adjustment (positive to boost left motor)
+ #define LEFT_BOOST 20  // Boost left motor power
+ 
+ // Convert from speed (-100 to 100) to servo command (0 to 255)
+ int speed_to_command(int8_t speed) {
+     float kp = 0.2;
+     return (int)(kp * speed + 127);
+ }
+ 
+ // Sets motor to a specific speed with display
+ void motor(uint8_t num, int cmd_value) {
+     char print_speed[16];
+     
+     sprintf(print_speed, "M%d: %d", num, cmd_value);
+     lcd_cursor(0, num == 2 ? 0 : 1);
+     print_string(print_speed);
+     
+     set_servo(num, cmd_value);
+ }
+ 
+ // Move both motors simultaneously with left motor boost
+ void move_motors(int left_target, int right_target) {
+     int left_current = 127;
+     int right_current = 127;
+     
+     // Apply boost to left motor during forward movement
+     if (left_target > 127) {
+         // If moving forward, add power to left motor
+         left_target += LEFT_BOOST;
+         
+         // Make sure we don't exceed valid range
+         if (left_target > 255) left_target = 255;
+     }
+     
+     int left_steps = abs(left_target - left_current);
+     int right_steps = abs(right_target - right_current);
+     int total_steps = (left_steps > right_steps) ? left_steps : right_steps;
+     
+     int step_size = 2;
+     
+     float left_increment = (left_target - left_current) / (float)total_steps * step_size;
+     float right_increment = (right_target - right_current) / (float)total_steps * step_size;
+     
+     clear_screen();
+     
+     for (int i = 0; i < total_steps; i += step_size) {
+         left_current += left_increment;
+         right_current += right_increment;
+         
+         if ((left_increment > 0 && left_current > left_target) ||
+             (left_increment < 0 && left_current < left_target)) {
+             left_current = left_target;
+         }
+         
+         if ((right_increment > 0 && right_current > right_target) ||
+             (right_increment < 0 && right_current < right_target)) {
+             right_current = right_target;
+         }
+         
+         motor(2, (int)left_current);
+         motor(3, (int)right_current);
+         
+         _delay_ms(75);
+     }
+     
+     // Ensure final values are set exactly
+     motor(2, left_target);
+     motor(3, right_target);
+ }
+ 
+ // Move robot forward with left motor boost
+ void forward() {
+     lcd_cursor(0, 0);
+     print_string("Moving Forward");
+     
+     int left_forward = speed_to_command(100);
+     int right_forward = speed_to_command(-100);
+     
+     move_motors(left_forward, right_forward);
+ }
+ 
+ // Move robot backward
+ void backward() {
+     lcd_cursor(0, 0);
+     print_string("Moving Backward");
+     
+     int left_backward = speed_to_command(-100);
+     int right_backward = speed_to_command(100);
+     
+     move_motors(left_backward, right_backward);
+ }
+ 
+ // Stop both motors
+ void stop() {
+     lcd_cursor(0, 0);
+     print_string("Stopping");
+     
+     move_motors(127, 127);
+ }
+ 
+ // Display current motor values on LCD
+ void display_motor_values(int left_value, int right_value) {
+     clear_screen();
+     char buffer[16];
+     
+     sprintf(buffer, "L:%d R:%d", left_value, right_value);
+     lcd_cursor(0, 0);
+     print_string(buffer);
+ }
+ 
+ int main(int argc, char *argv[]) {
+     init();
+     init_servo();
+     init_lcd();
+     
+     stop();
 
-    for (int i = 0; i < speed; i++) {
 
-        if (full_speed <= 157 && full_speed > 127 && curr_speed < 157) { 
-            curr_speed = curr_speed + 10; // make it faster forward if we are in the range between 0 and 100 
-        }
-        else if (curr_speed >= 157) {  // logic to handle if the speed exceeds 157 
-            curr_speed = 157; 
-        } 
-
-        if (full_speed >= 97 && full_speed < 127 && curr_speed > 97) {
-            curr_speed = curr_speed - 10; // make it faster in reverse if we are in the range between 0 and -100
-        } 
-        else if (curr_speed <= 97) { // logic to handle if the speed exceeds 97
-            curr_speed = 97;
-        }
-
-        else {
-            curr_speed = 127; // if it's neither accelerating forwards or backwards, set it to stop (127)
-        }
-
-        clear_screen();
-        sprintf(print_speed, "%d", curr_speed);
-        print_string(print_speed);
-        set_servo(num, curr_speed);
-    }
-}
-
-void forward() { // moves Harabot forward
-    motor(2, 100);
-    motor(3, -100);
-}
-
-void backward() { // moves Harabot backward
-    motor(2, -100);
-    motor(3, 100);
-}
-
-void stop() { // stops Harabot 
-    motor(2, 127);
-    motor(3, 127);
-}
-
-int main(int arc, charargv[]) {
-    init(); // initialization stuff 
-    init_servo();
-    init_lcd();
-
-    // gradually spins the motors to full speed forward
-    forward();
-    _delay_ms(1000); // wait for 1 second 
-
-    // gradually slows the motors to a stop
-    stop();
-    _delay_ms(1000); // wait for 1 second
-
-    // does the same in the reverse motor direction and continuously repeats
-    backward();
-    _delay_ms(1000); // wait for 1 second
-
-    return 0; 
-}
+     clear_screen();
+     print_string("Boost Test");
+     _delay_ms(1000);
+     
+     // Test forward motion with boost
+     forward();
+     _delay_ms(3000);  // Longer test to observe effect
+     
+     // Test stopping
+     stop();
+     _delay_ms(1000);
+     
+     // Test backward motion
+     backward();
+     _delay_ms(3000);
+     
+     // Stop at end
+     stop();
+     
+     clear_screen();
+     print_string("Test Complete");
+     
+     return 0;
+ }
