@@ -67,12 +67,13 @@
          // For fear behavior: move away from higher light intensity
          if (light_diff > 0) {
              // Left sensor has more light, move right motor
-             set_servo(RIGHT_MOTOR, MOTOR_STOP + MOTOR_SPEED);
-             set_servo(LEFT_MOTOR, MOTOR_STOP);
-         } else {
-             // Right sensor has more light, move left motor
              set_servo(LEFT_MOTOR, MOTOR_STOP + MOTOR_SPEED);
              set_servo(RIGHT_MOTOR, MOTOR_STOP);
+         } 
+         else {
+             // Right sensor has more light, move left motor
+             set_servo(RIGHT_MOTOR, MOTOR_STOP - MOTOR_SPEED);
+             set_servo(LEFT_MOTOR, MOTOR_STOP);
          }
      } else {
          // Difference not significant, stay still
