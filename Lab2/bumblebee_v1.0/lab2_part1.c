@@ -87,11 +87,17 @@
          motor(2, (int)left_current);
          motor(3, (int)right_current);
          
+         clear_screen(); 
          // Display current speed values
-         char buffer[16];
-         sprintf(buffer, "L:%d R:%d", (int)left_current, (int)right_current);
+         char buffer1[16];
+         sprintf(buffer1, "L:%d", (int)left_current);
          lcd_cursor(0, 0);
-         print_string(buffer);
+         print_string(buffer1);
+
+         char buffer2[16]; 
+         sprintf(buffer2, "R:%d", (int)right_current);
+         lcd_cursor(0, 1);
+         print_string(buffer2);
          
          // Delay between steps for smooth acceleration
          _delay_ms(ACCEL_DELAY);
@@ -116,7 +122,7 @@
          clear_screen();
          lcd_cursor(0, 0);
          print_string("Forward");
-         _delay_ms(10);
+         _delay_ms(1000);
          
          int left_forward = speed_to_command(100);
          int right_forward = speed_to_command(-100);
@@ -129,7 +135,7 @@
          print_string("Stopping");
          _delay_ms(1000);
          move_motors(127, 127);
-         _delay_ms(2000);
+         _delay_ms(1000);
          
          // Moving backward with gradual acceleration
          clear_screen();
@@ -148,7 +154,7 @@
          print_string("Stopping");
          _delay_ms(1000);
          move_motors(127, 127);
-         _delay_ms(2000);
+         _delay_ms(1000);
      }
      return 0;
  }
