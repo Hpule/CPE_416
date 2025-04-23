@@ -29,8 +29,8 @@
 
  int pd_controller(int16_t error) {
   // Controller gains - TUNE THESE VALUES!
-  const float kp = 0.7; // Proportional gain
-  const float kd = 0.18; // Derivative gain
+  const float kp = 0.65; // Proportional gain
+  const float kd = 0.22; // Derivative gain
 
   // Static variable to store the error from the previous call
   // Initialized to 0 only once when the program starts.
@@ -61,15 +61,15 @@
 
 
  void forward() {
-   int left_forward = pd_controller(25); // test 75% so we hopefully get less overshoot 
-   int right_forward = pd_controller(-25);
+   int left_forward = pd_controller(20); // test 75% so we hopefully get less overshoot 
+   int right_forward = pd_controller(-20);
 
    set_servo(LEFT_SERVO, left_forward);
    set_servo(RIGHT_SERVO, right_forward);
  }
 
  void left() {
-    int left_forward = pd_controller(-18); // test 75% so we hopefully get less overshoot
+    int left_forward = pd_controller(-23); // test 75% so we hopefully get less overshoot
     int right_forward = pd_controller(-100);
   
     set_servo(LEFT_SERVO, left_forward);
@@ -78,7 +78,7 @@
 
  void right() {
     int left_forward = pd_controller(100); // test 75% so we hopefully get less overshoot 
-    int right_forward = pd_controller(18);
+    int right_forward = pd_controller(23);
   
     set_servo(LEFT_SERVO, left_forward);
     set_servo(RIGHT_SERVO, right_forward);
@@ -141,49 +141,6 @@
     led_off(0);
     led_off(1);
 }
-  // stop(); // stop the robot
-  //  if (left_val > LINE_THRES || right_val > LINE_THRES) { // this means that we are on the line
-  //     stop(); // stop the robot
-  //  }
-  //  else {
-  //     forward(); // this means that we can go forward 
-  //  }
-  
-  //  if (left_val + right_val < 350) { // this means that we are on the line
-  //     if (left_val > right_val) { // this means that we are on the left side of the line
-  //        left(); // turn left
-  //     }
-  //     else {
-  //        right(); // turn right
-  //     }
-  //  }
- 
-
-  // void debug() {
-  //   char left_msg[17];
-  //   char right_msg[17];
-   
-  //   lcd_cursor(0, 0);
-  //   sprintf(left_msg, "L:%3d", left);
-  //   print_string(left_msg);
-   
-  //   lcd_cursor(0, 1);
-  //   sprintf(right_msg, "R:%3d", right);
-  //   print_string(right_msg);
-
-  //   set_servo(2, 127);
-  //   set_servo(3, 127);
-  // }
-
- /* 
-   unfortunately, it seems that we'll have to detect for when it's white or black so check if it's one or the other
-   - left sensor seems to output a higher voltage than the right sensor 
-   - around 80 range is white 
-   - around 180-190 range is black 
-   this means that the lower threshold we'll use is probably around 175 
- */
-
- // go forward until we get to some values where we'll need to turn 
 
  int main(void) { 
    init();
