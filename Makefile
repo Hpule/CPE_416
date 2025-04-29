@@ -13,23 +13,13 @@ test: test.c $(wildcard $(BOARD_LIB)/*.c)
 	avr-objcopy -O ihex main.elf main.hex
 	avr-size main.elf
 
-part1: lab2_part1.c $(wildcard $(BOARD_LIB)/*.c)
-	avr-gcc -I$(BOARD_LIB) -DF_CPU=$(CLOCK_RATE) -Wall -mmcu=atmega645a -O2 -o main.elf lab2_part1.c $(wildcard $(BOARD_LIB)/*.c)
+part1: lab3_part1.c $(wildcard $(BOARD_LIB)/*.c)
+	avr-gcc -I$(BOARD_LIB) -DF_CPU=$(CLOCK_RATE) -Wall -mmcu=atmega645a -O2 -o main.elf lab3_part1.c $(wildcard $(BOARD_LIB)/*.c)
 	avr-objcopy -O ihex main.elf main.hex
 	avr-size main.elf
 
-part2: lab2_part2.c $(wildcard $(BOARD_LIB)/*.c)
-	avr-gcc -I$(BOARD_LIB) -DF_CPU=$(CLOCK_RATE) -Wall -mmcu=atmega645a -O2 -o main.elf lab2_part2.c $(wildcard $(BOARD_LIB)/*.c)
-	avr-objcopy -O ihex main.elf main.hex
-	avr-size main.elf
-
-part3: lab2_part3.c $(wildcard $(BOARD_LIB)/*.c)
-	avr-gcc -I$(BOARD_LIB) -DF_CPU=$(CLOCK_RATE) -Wall -mmcu=atmega645a -O2 -o main.elf lab2_part3.c $(wildcard $(BOARD_LIB)/*.c)
-	avr-objcopy -O ihex main.elf main.hex
-	avr-size main.elf
-
-part4: lab2_part4.c $(wildcard $(BOARD_LIB)/*.c)
-	avr-gcc -I$(BOARD_LIB) -DF_CPU=$(CLOCK_RATE) -Wall -mmcu=atmega645a -O2 -o main.elf lab2_part4.c $(wildcard $(BOARD_LIB)/*.c)
+part2: lab3_part2.c $(wildcard $(BOARD_LIB)/*.c)
+	avr-gcc -I$(BOARD_LIB) -DF_CPU=$(CLOCK_RATE) -Wall -mmcu=atmega645a -O2 -o main.elf lab3_part2.c $(wildcard $(BOARD_LIB)/*.c)
 	avr-objcopy -O ihex main.elf main.hex
 	avr-size main.elf
 
