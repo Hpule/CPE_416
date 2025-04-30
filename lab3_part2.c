@@ -28,10 +28,10 @@
 	float w1 = (float)rand()/RAND_MAX; // initialize the weights and biases to random values (type cast b/c rand() returns int)
 	float w2 = (float)rand()/RAND_MAX; 
 	float w3 = (float)rand()/RAND_MAX; // this is just for the output layer since it has 3 inputs (from the hidden layer)
-	float bias1 = (float)rand()/RAND_MAX; 
+	float bias = (float)rand()/RAND_MAX; 
  }	nnv; 
 
- // neurons in the neural network (both hidden and output layers)
+ // neurons in the neural network (both hidden and output layers) - might not be wise to create instances of them like this, maybe just store all the values in an array
  nnv h1; // first hidden neuron 
  nnv h2; // second hidden neuron   
  nnv h3; // third hidden neuron 
@@ -55,6 +55,11 @@
 	set_servo(2, 127); // stop the left motor
 	set_servo(3, 127); // stop the right motor
  } 
+
+ void sigmoid(float x) { // squeezing function for a 0-1 output 
+	float result = 1 / (1 + exp(-x)); // sigmoid activation function
+	return result; 
+ }
 
  motor_command compute_proportional(uint8_t left, uint8_t right) { // we will put the neural output from compute_neural_network() here
 	motor_command both_commands; // initialize a motor_command struct
@@ -84,7 +89,7 @@
 	char *command_arr = malloc(sizeof(uint8_t) * MAX_INPUTS); // allocate memory for the array of motor commands
 	int i = 0; // index of the array 
 
-	while(i <= MAX_INPUTS) { // collect data from sensors until the array is full 
+	while(i <= MAX_INPUTS - 1) { // collect data from sensors until the array is full 
 		uint8_t left_sensor = analog(3); // get the left and right sensor values
 		uint8_t right_sensor = analog(4); 
 
@@ -95,21 +100,34 @@
 	return command_arr 
  }
 
- void train_neural_network() { // from the data array we have the input values 
+ void train_neural_network(char *command_arr) { // from the data array we have the input values 
 	stop();  
+	int even = 0; // indicies for the left and right sensor values (even = left, right = odd)
+	int odd = 1;
 	
-	for (int i = 0; i < HIDDEN_NEURONS; i++) { // for each hidden neuron  
-		float total = 0; // initialize the total to 0 at the start of computing each neuron
-		
-		for (int j = 0; j < MAX_INPUTS; j++) {
-			total += command_arr[j] * h1.w1; // this is wrong, make sure to fix it 
-		}
-	}
+	// calculate the outputs of the hidden neurons 
+	float hidden_out1 = sigmoid(command_arr[even] * h1.w1 + command_arr[odd] * h1.w2 + h1.bias); 
+	float hidden_out2 = sigmoid(command_arr[even] * h2.w1 + command_arr[odd] * h2.w2 + h2.bias);
+	float hidden_out3 = sigmoid(command_arr[even] * h3.w1 + command_arr[odd] * h3.w2 + h3.bias); 
+
+	// calculate the outputs of the outout neurons 
+	float output1 = sigmoid(hidden_out1 * o1.w1 + hidden_out2 * o1.w2 + hidden_out3 * o1.w3 + o1.bias); 
+	float output2 = sigmoid(hidden_out1 * o2.w1 + hidden_out2 * o2.w2 + hidden_out3 * o2.w3 + o2.bias); 
+	
+	// backpropagation 
+	
+
+	motor_command target = compute_proportional(command_arr[even], command_arr[odd]); // get the motor commands from the neural network
+
+	// start with the output layer (target is the output from the proportional - confimed by Dr.Seng) 
+	float de_w5 = (target.left_s - output1); // error for the first output neuron
+	float out_term2 = (target.right_s - output2); // error for the second output neuron
+
 
 
 	
-	// scale sensor readings to be between 0 and 1 before putting them in 
 
+	
 
 	// probably take in an array of motor_commands and call compute_neural_network() for each one
 	// then update the weights of the neural network after every epoch (may need a helper function for this)
