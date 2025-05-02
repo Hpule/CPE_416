@@ -5,7 +5,6 @@
 
 int main(void) {
    init();  //initialize board hardware
-   led_on(LED0_PIN); 
-   led_on(LED1_PIN);
+   led_on(1);
    return 0;
 }
