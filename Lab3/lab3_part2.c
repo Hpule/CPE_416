@@ -17,6 +17,7 @@
 
  #define MAX_INPUTS 100 // max amount of sensor values (motor commands) into the  
  #define HIDDEN_NEURONS 3 // number of hidden neurons in the neural network
+#define LEARN_RATE 0.001
 
 
  // All of the states of our code:
@@ -29,6 +30,7 @@
 #define KI 0.001   // Integral gain
 #define KD 0.05  // Derivative gain
 #define NUM_ERROR_SAMPLES 5  // Number of samples to keep for derivative
+
 
 
  uint8_t current_state = STATE_PROPORTIONAL; 
@@ -115,6 +117,29 @@ void init_neural_network() {
 	return both_commands; // return the left and right command
  }
 
+ float normalize(uint8_t value) {
+    float result = (float)value / 100.0;
+    if (result < 0.0) {
+        return 0.0;
+    } else if (result > 1.0) {
+        return 1.0;
+    } else {
+        return result;
+    }
+}
+
+
+ float denormalize(float value) {
+    float result = value * 100.0;
+    if (result < 0.0) {
+        return 0.0;
+    } else if (result > 100.0) {
+        return 100.0;
+    } else {
+        return result;
+    }
+}
+
  motor_command compute_pid(uint8_t left, uint8_t right) {
     motor_command pid_command;
     static int error_samples[NUM_ERROR_SAMPLES] = {0};
@@ -165,22 +190,22 @@ void init_neural_network() {
 }
 
 
- motor_command compute_neural_network(uint8_t left, uint8_t right) {
-	motor_command neural_output; 
+motor_command compute_neural_network(uint8_t left, uint8_t right) {
+    motor_command neural_output; 
     
-	float hidden_out1 = sigmoid(left * h1.w1 + right * h1.w2 + h1.bias);
-	float hidden_out2 = sigmoid(left * h2.w1 + right * h2.w2 + h2.bias); 
-	float hidden_out3 = sigmoid(left * h3.w1 + right * h3.w2 + h3.bias);
+    float hidden_out1 = sigmoid(left * h1.w1 + right * h1.w2 + h1.bias);
+    float hidden_out2 = sigmoid(left * h2.w1 + right * h2.w2 + h2.bias); 
+    float hidden_out3 = sigmoid(left * h3.w1 + right * h3.w2 + h3.bias);
 
-	// Calculate output layer
-	float out_left = sigmoid(hidden_out1 *o1.w1 + hidden_out2 * o1.w2 + hidden_out3 * o1.w3 +o1.bias); 
-	float out_right = sigmoid(hidden_out1 *o1.w1 + hidden_out2 * o1.w2 + hidden_out3 * o1.w3 +o1.bias);
+    // Calculate output layer (corrected the syntax error)
+    float out_left = sigmoid(hidden_out1 * o1.w1 + hidden_out2 * o1.w2 + hidden_out3 * o1.w3 + o1.bias); 
+    float out_right = sigmoid(hidden_out1 * o2.w1 + hidden_out2 * o2.w2 + hidden_out3 * o2.w3 + o2.bias);
 
-	neural_output.left_s = (uint8_t)(out_left * 255); 
-	neural_output.right_s = (uint8_t)(out_right * 255); 
-	
-	return neural_output; // return the left and right motor commands
- }
+    neural_output.left_s = (uint8_t)(out_left * 255); 
+    neural_output.right_s = (uint8_t)(out_right * 255); 
+    
+    return neural_output;
+}
 
  float calculate_wb(uint8_t target, float output, float hidden_out) { // calculate the weights and biases 
 	float de_do = (target - output); // the components of the output equation 
@@ -304,16 +329,10 @@ uint16_t adjust_training_iterations() {
         uint8_t accel_x = get_accel_x();
         
         // Tilted left - decrease by 1
-        if (accel_y > 30 && accel_y < 70) {
-            iterations--;
-            _delay_ms(100); // Delay to control adjustment speed
-        }
+        if (accel_y > 30 && accel_y < 70) {iterations--; _delay_ms(100);}
         
         // Tilted right - increase by 1
-        if (accel_y > 200 && accel_y < 250) {
-            iterations++;
-            _delay_ms(100);
-        }
+        if (accel_y > 200 && accel_y < 250) {iterations++; _delay_ms(100);}
         
         // Tilted down - decrease by 10
         if (accel_x > 200 && accel_x < 230) {
@@ -332,9 +351,7 @@ uint16_t adjust_training_iterations() {
         }
         
         // Ensure iterations doesn't go negative
-        if (iterations < 0) {
-            iterations = 0;
-        }
+        if (iterations < 0) {iterations = 0;}
         
         // Display current iteration count
         lcd_cursor(0, 1);
@@ -412,50 +429,134 @@ uint16_t adjust_training_iterations() {
 
  }
 
- void training(){
-   // Check if data is available
-    if (training_data == NULL) {
-        clear_screen();
-        lcd_cursor(0, 0);
-        print_string("No data!");
-        _delay_ms(2000);
-        current_state = STATE_PROPORTIONAL;
-        return;
-    }
-    
-    // Display state
-    clear_screen();
-    lcd_cursor(0, 0);
-    print_string("Training");
-    _delay_ms(1000); 
-
-    // Get training iterations from accelerometer
-    uint16_t training_iterations = adjust_training_iterations();
-    
-    // You can now use training_iterations in your training code
-    // For now, just display it
-    clear_screen();
-    lcd_cursor(0, 0);
-    print_string("Will train for:");
-    lcd_cursor(0, 1);
-    print_num(training_iterations);
-    print_string(" iterations");
-    _delay_ms(2000);
-
-    // Placeholder for actual training code (to implement later)
-    clear_screen();
-    lcd_cursor(0, 0);
-    print_string("Training ");
-    lcd_cursor(0, 1);
-    print_string("Done");
-    _delay_ms(1000); 
-
-    // Wait for button press to continue
-    while (!check_button()) {
-        _delay_ms(100);
-    }
-
-    current_state = STATE_NEURAL_NETWORK;
+ void training() {
+    // Check if data is available
+     if (training_data == NULL) {
+         clear_screen();
+         lcd_cursor(0, 0);
+         print_string("No data!");
+         _delay_ms(2000);
+         current_state = STATE_PROPORTIONAL;
+         return;
+     }
+     
+     // Display state
+     clear_screen();
+     lcd_cursor(0, 0);
+     print_string("Training");
+     _delay_ms(1000); 
+ 
+     // Initialize neural network if not done already
+     init_neural_network();
+ 
+     // Get training iterations from accelerometer
+     uint16_t training_iterations = adjust_training_iterations();
+     float total_error = 0.0;
+     
+     // Training loop
+     for (uint16_t epoch = 0; epoch < training_iterations; epoch++) {
+         total_error = 0.0;
+         
+         // Process all data points
+         for (int i = 0; i < MAX_INPUTS - 1; i += 2) {
+             uint8_t left_sensor = training_data[i];     // Use training_data instead of command_arr
+             uint8_t right_sensor = training_data[i+1];  // Use training_data instead of command_arr
+             
+             if (left_sensor == 0 && right_sensor == 0) {
+                 continue; // Skip empty entries
+             }
+             
+             // Forward pass - calculate hidden layer outputs
+             float hidden_out1 = sigmoid(left_sensor * h1.w1 + right_sensor * h1.w2 + h1.bias); 
+             float hidden_out2 = sigmoid(left_sensor * h2.w1 + right_sensor * h2.w2 + h2.bias);
+             float hidden_out3 = sigmoid(left_sensor * h3.w1 + right_sensor * h3.w2 + h3.bias); 
+ 
+             // Forward pass - calculate output layer outputs
+             float output1 = sigmoid(hidden_out1 * o1.w1 + hidden_out2 * o1.w2 + hidden_out3 * o1.w3 + o1.bias); 
+             float output2 = sigmoid(hidden_out1 * o2.w1 + hidden_out2 * o2.w2 + hidden_out3 * o2.w3 + o2.bias);
+             
+             // Get target outputs from PID controller
+             motor_command target = compute_pid(left_sensor, right_sensor);
+             
+             // Calculate output layer deltas (errors)
+             float delta_out1 = (target.left_s - output1 * 255) * output1 * (1 - output1);
+             float delta_out2 = (target.right_s - output2 * 255) * output2 * (1 - output2);
+             
+             // Update output layer weights
+             o1.w1 += LEARN_RATE * delta_out1 * hidden_out1;
+             o1.w2 += LEARN_RATE * delta_out1 * hidden_out2;
+             o1.w3 += LEARN_RATE * delta_out1 * hidden_out3;
+             o1.bias += LEARN_RATE * delta_out1;
+             
+             o2.w1 += LEARN_RATE * delta_out2 * hidden_out1;
+             o2.w2 += LEARN_RATE * delta_out2 * hidden_out2;
+             o2.w3 += LEARN_RATE * delta_out2 * hidden_out3;
+             o2.bias += LEARN_RATE * delta_out2;
+             
+             // Calculate hidden layer deltas
+             float delta_h1 = (delta_out1 * o1.w1 + delta_out2 * o2.w1) * hidden_out1 * (1 - hidden_out1);
+             float delta_h2 = (delta_out1 * o1.w2 + delta_out2 * o2.w2) * hidden_out2 * (1 - hidden_out2);
+             float delta_h3 = (delta_out1 * o1.w3 + delta_out2 * o2.w3) * hidden_out3 * (1 - hidden_out3);
+             
+             // Update hidden layer weights
+             h1.w1 += LEARN_RATE * delta_h1 * left_sensor;
+             h1.w2 += LEARN_RATE * delta_h1 * right_sensor;
+             h1.bias += LEARN_RATE * delta_h1;
+             
+             h2.w1 += LEARN_RATE * delta_h2 * left_sensor;
+             h2.w2 += LEARN_RATE * delta_h2 * right_sensor;
+             h2.bias += LEARN_RATE * delta_h2;
+             
+             h3.w1 += LEARN_RATE * delta_h3 * left_sensor;
+             h3.w2 += LEARN_RATE * delta_h3 * right_sensor;
+             h3.bias += LEARN_RATE * delta_h3;
+             
+             // Calculate total error (for display)
+             total_error += fabs(target.left_s - output1 * 255) + fabs(target.right_s - output2 * 255);
+         }
+         
+         // Display progress every 10 epochs
+         if (epoch % 10 == 0) {
+             clear_screen();
+             lcd_cursor(0, 0);
+             print_string("Epoch: ");
+             print_num(epoch);
+             
+             lcd_cursor(0, 1);
+             print_string("Err: ");
+             // Convert error to integer for display
+             print_num((uint16_t)(total_error));
+             
+             _delay_ms(100);  // Brief delay for display update
+         }
+         
+         // Check for button press to abort training
+         if (get_btn()) {
+             _delay_ms(50);  // Debounce
+             clear_screen();
+             lcd_cursor(0, 0);
+             print_string("Training");
+             lcd_cursor(0, 1);
+             print_string("Aborted");
+             _delay_ms(1000);
+             break;
+         }
+     }
+     
+     // Training complete
+     clear_screen();
+     lcd_cursor(0, 0);
+     print_string("Training ");
+     lcd_cursor(0, 1);
+     print_string("Done");
+     _delay_ms(1000); 
+ 
+     // Wait for button press to continue
+     while (!check_button()) {
+         _delay_ms(100);
+     }
+ 
+     current_state = STATE_NEURAL_NETWORK;
  }
 
  void neural_network(){
