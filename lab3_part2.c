@@ -77,13 +77,26 @@
 	return neural_output; // return the left and right motor commands
  }
 
- float calculate_wb(uint8_t target, float output, float hidden_out) { // calculate the weights and biases 
-	float de_do = (target - output); // the components of the output equation 
+ float calculate_wb(uint8_t target, float output, float hidden_out, float old_wb) { // calculate the weights and biases (wb stands for weights/biases)
 	float do_dnet = output * (1 - output); 
-	float dnet_dw = hidden_out;
-	float de_dw = de_do * do_dnet * dnet_dw; // the derivative of the output with respect to the weight
+	if () { // this is for if the neuron is a hidden layer neuron (different types of computation for de_do)
+		float de_dout1 = hidden_out * do_dnet; // might be only one part of the equation and we need the other part (regarding do_dnet) 
+		float de_dout2 = hidden_out2 * do_dnet; // might be only one part of the equation and we need the other part (regarding do_dnet) WRONG CODE 
+		float det_dout = de_dout1 + det dout2; // the derivative of the output with respect to the net input 
+		float de_do = (target - output); // the components of the output equation 
+	} 
 
-	return de_dw; // not the final output, temporary 
+	else { // this is for if the neuron is an output layer neuron
+		float de_do = (target - output); // the components of the output equation 
+	}
+	float dnet_dwb = hidden_out;
+	float de_dwb = de_do * do_dnet * dnet_dwb; // the derivative of the output with respect to the weight
+
+	float alpha = 0.3; // the learning rate (0.001 - 0.3, should decrease each time)
+	
+	float new_wb = old_wb - alpha * de_dwb; 
+
+	return new_wb; // output the new weight/bias
  }
 
  char* collect_data() { // need to test if this works or not
@@ -118,24 +131,38 @@
 	float output2 = sigmoid(hidden_out1 * o2.w1 + hidden_out2 * o2.w2 + hidden_out3 * o2.w3 + o2.bias); 
 	
 	// backpropagation 
+	// might need to squeeze this with a sigmoid so that I'm not getting a value of 0-255
 	motor_command target = compute_proportional(command_arr[even], command_arr[odd]); // get the motor commands from the neural network
 
 	// start with the output layer (target is the output from the proportional - confimed by Dr.Seng) 
 	// for first output layer neuron 
 	float det_w7 = calculate_wb(target.left_s, output1, hidden_out1); 
 	float det_w8 = calculate_wb(target.left_s, output1, hidden_out2); 
-	float det_w9 = calculate_wb(target.left_s, output1, hidden_out3);  
+	float det_w9 = calculate_wb(target.left_s, output1, hidden_out3); 
+	float det_b4 = calculate_wb(target.left_s, output1, 1); // bias is always 1 (for the output layer) 
 
 	// for second output layer neuron 
 	float det_w10 = calculate_wb(target.right_s, output2, hidden_out1);
 	float det_w11 = calculate_wb(target.right_s, output2, hidden_out2);
 	float det_w12 = calculate_wb(target.right_s, output2, hidden_out3);
+	float det_b5 = calculate_wb(target.right_s, output2, 1); // bias is always 1 (for the output layer)
 
 	
+	// calculate the hidden layer weights and biases
+	// for first hidden layer neuron 
+	float det_w1 = calculate_wb(command_arr[even], hidden_out1, o1.w1);
+	float det_w2 = calculate_wb(command_arr[odd], hidden_out1, o1.w2);
+	float det_b1 = calculate_wb(command_arr[even], hidden_out1, o1.w3);
 
+	// for second hidden layer neuron 
+	float det_w3 = calculate_wb(command_arr[even], hidden_out2, o1.w1);
+	float det_w4 = calculate_wb(command_arr[odd], hidden_out2, o1.w2);
+	float det_b2 = calculate_wb(command_arr[even], hidden_out2, o1.w3);
 
-
-	
+	// for third hidden layer neuron
+	float det_w5 = calculate_wb(command_arr[even], hidden_out3, o1.w1);
+	float det_w6 = calculate_wb(command_arr[odd], hidden_out3, o1.w2);
+	float det_b3 = calculate_wb(command_arr[even], hidden_out3, o1.w3);
 
 	
 
