@@ -218,7 +218,6 @@ void network_init()
     network[4].w3 = (double)rand()/ RAND_MAX;
     network[4].bias = (double)rand()/ RAND_MAX;
 
-
 }
 
 int data_collection()
