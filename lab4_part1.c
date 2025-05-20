@@ -18,16 +18,17 @@
 
 // Square
 #define STRAIGHT_TICKS 89
-#define TURN_TICKS 50
+#define TURN_TICKS 30
 
 // Bowtie 
- #define DIAGONAL_TICKS 126 // rounded up b/c it was 125.86 but could also be 125  
+#define DIAGONAL_TICKS 110 // rounded up b/c it was 125.86 but could also be 125  
+#define BOW_TURN_TICKS 96
 
- #define LEFT_SERVO 2
- #define RIGHT_SERVO 3
+#define LEFT_SERVO 2
+#define RIGHT_SERVO 3
 
- #define RIGHT_DIG 4
- #define LEFT_DIG 5
+#define RIGHT_DIG 4
+#define LEFT_DIG 5
 
 volatile uint16_t left_encoder = 0; 
 volatile uint16_t right_encoder = 0; 
@@ -64,8 +65,8 @@ ISR(PCINT1_vect) {
 void move_straight(uint16_t ticks) {
     left_encoder = 0;
     right_encoder = 0;
-    set_servo(LEFT_SERVO, MOTOR_STOP + BASE_SPEED + 5);
-    set_servo(RIGHT_SERVO, MOTOR_STOP - BASE_SPEED);
+    set_servo(LEFT_SERVO, MOTOR_STOP + BASE_SPEED);
+    set_servo(RIGHT_SERVO, MOTOR_STOP - BASE_SPEED + 30);
     
     while (left_encoder < ticks || right_encoder < ticks) {
         clear_screen();
@@ -83,7 +84,7 @@ void move_straight(uint16_t ticks) {
 void turn_right(uint16_t ticks) {
     left_encoder = 0;
     right_encoder = 0;
-    set_servo(LEFT_SERVO, -TURN_SPEED);
+    set_servo(LEFT_SERVO, MOTOR_STOP + TURN_SPEED);
     
     while (right_encoder < ticks) { // For some reason left works...
         clear_screen();
@@ -103,8 +104,8 @@ void turn_right(uint16_t ticks) {
 void turn_left(uint16_t ticks) {
     left_encoder = 0;
     right_encoder = 0;
-    set_servo(RIGHT_SERVO, TURN_SPEED);
-    
+    set_servo(RIGHT_SERVO, MOTOR_STOP - TURN_SPEED);
+
     while (left_encoder < ticks) { // For some reason left works...
         clear_screen();
         lcd_cursor(0, 0);
@@ -151,63 +152,6 @@ void drive_square() {
 }
 
 
-// void turn_angle(uint8_t angle){
-
-//     print_string("AGL");
-//     _delay_ms (3000);
-//     if (angle == 0) {
-//         return; // No turn needed
-//     }
-
-//     // Calculate ticks based on angle (scale SMALL_TEN for the angle)
-//     uint16_t turn_ticks = (abs(angle)  / 10);  // Fixed: divide by 10 since SMALL_TEN is for 10 degrees
-    
-//     left_encoder = 0;
-//     right_encoder = 0;
-    
-//     clear_screen();
-//     lcd_cursor(0, 0);
-//     if (angle < 0) {
-//         print_string("TL:");
-//         set_servo(LEFT_SERVO, MOTOR_STOP - SMALL_TEN);
-//         set_servo(RIGHT_SERVO, MOTOR_STOP - SMALL_TEN);
-//         _delay_ms(2000);
-//     } else {
-//         print_string("TR:");
-//         set_servo(LEFT_SERVO, MOTOR_STOP + SMALL_TEN);
-//         set_servo(RIGHT_SERVO, MOTOR_STOP + SMALL_TEN);
-//         _delay_ms(2000);
-    // }
-
-    // print_num(abs(angle));
-    
-    // while (left_encoder < turn_ticks && right_encoder < turn_ticks) {
-    //     clear_screen();
-    //     lcd_cursor(0, 0);
-    //     print_string("L:");
-    //     print_num(left_encoder);
-    //     print_string(" R:");
-    //     print_num(right_encoder);
-    //     lcd_cursor(0, 1);
-    //     print_string("T: ");
-    //     print_num(turn_ticks);
-    //     _delay_ms(100);  // Changed from 1000ms to 100ms for smoother display
-    // }
-    
-    // stop();
-    
-    // // Show final turn values
-    // clear_screen();
-    // lcd_cursor(0, 0);
-    // print_string("Turn Complete");
-    // lcd_cursor(0, 1);
-    // print_string("L:");
-    // print_num(left_encoder);
-    // print_string(" R:");
-    // print_num(right_encoder);
-    // _delay_ms(1000);
-// }
-
 void drive_bowtie() {
     clear_screen();
     lcd_cursor(0, 0);
@@ -216,15 +160,27 @@ void drive_bowtie() {
     
     // logic to drive the bowtie 
     move_straight(STRAIGHT_TICKS);  // goes up the line then turns right on the first corner 
-    turn_right(50); 
+    turn_right(BOW_TURN_TICKS); 
+    stop();
+    _delay_ms(1000);
 
-    move_straight(DIAGONAL_TICKS); // moves diagonal across to the second corner, then turns left 
-    turn_left(50);
 
-    move_straight(STRAIGHT_TICKS); // goes up the line then turns left on the third corner
-    turn_left(50);
+    move_straight(DIAGONAL_TICKS - 10); // moves diagonal across to the second corner, then turns left 
+    turn_left(BOW_TURN_TICKS - 10);
+    stop();
+    _delay_ms(1000);
 
-    move_straight(DIAGONAL_TICKS);
+
+    move_straight(STRAIGHT_TICKS - 20); // moves diagonal across to the third corner, then turns left 
+    turn_left(BOW_TURN_TICKS);
+    stop();
+    _delay_ms(1000);
+
+    
+    move_straight(DIAGONAL_TICKS + 20); // moves diagonal across to the second corner, then turns left 
+    turn_right(BOW_TURN_TICKS); 
+    stop();
+    _delay_ms(1000);
     
     clear_screen();
     lcd_cursor(0, 0);
