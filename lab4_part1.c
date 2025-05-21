@@ -188,7 +188,6 @@ void drive_bowtie() {
     stop();
     _delay_ms(1000);
 
-
     turn_left_forward(24);
     stop();
     _delay_ms(1000);
