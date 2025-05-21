@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "globals.h"
 #include <util/delay.h>
 #include <avr/io.h>
@@ -18,7 +19,7 @@
 
 // Square
 #define STRAIGHT_TICKS 89
-#define TURN_TICKS 30
+#define TURN_TICKS 50
 
 // Bowtie 
 #define DIAGONAL_TICKS 110 // rounded up b/c it was 125.86 but could also be 125  
@@ -38,11 +39,14 @@ uint8_t pattern = 0; // 0 = square, 1 = bowtie
 void stop(void); 
 void init_encoder(void); 
 void move_straight(uint16_t ticks);
-void turn_right(uint16_t ticks);
-void turn_left(uint16_t ticks);
+void turn_right_forward(uint16_t ticks);
+void turn_left_forward(uint16_t ticks);
+void turn_right_backward(uint16_t ticks);
+void turn_left_backward(uint16_t ticks);
 void drive_square(void); 
 void drive_bowtie(); 
 void turn_angle(uint8_t angle); 
+void display(void); 
 
 
 void init_encoder() {
@@ -62,6 +66,17 @@ ISR(PCINT1_vect) {
 }
 
 
+void display(){
+    clear_screen();
+    lcd_cursor(0, 0);
+    print_string("L:");
+    print_num(left_encoder);
+    lcd_cursor(0, 1);
+    print_string("R:");
+    print_num(right_encoder);
+}
+
+
 void move_straight(uint16_t ticks) {
     left_encoder = 0;
     right_encoder = 0;
@@ -69,56 +84,62 @@ void move_straight(uint16_t ticks) {
     set_servo(RIGHT_SERVO, MOTOR_STOP - BASE_SPEED + 30);
     
     while (left_encoder < ticks || right_encoder < ticks) {
-        clear_screen();
-        lcd_cursor(0, 0);
-        print_string("L:");
-        print_num(left_encoder);
-        lcd_cursor(0, 1);
-        print_string("R:");
-        print_num(right_encoder);
+        display(); 
         _delay_ms(100);
     }    
     stop(); 
 }
 
-void turn_right(uint16_t ticks) {
+void turn_right_forward(uint16_t ticks) {
     left_encoder = 0;
     right_encoder = 0;
     set_servo(LEFT_SERVO, MOTOR_STOP + TURN_SPEED);
     
     while (right_encoder < ticks) { // For some reason left works...
-        clear_screen();
-        lcd_cursor(0, 0);
-        print_string("L:");
-        print_num(left_encoder);
-        lcd_cursor(0, 1);
-        print_string("R:");
-        print_num(right_encoder);
+        display(); 
         _delay_ms(100);
     }
     
-    set_motor(0, 0);
-    set_motor(1, 0);
+    stop(); 
 }
 
-void turn_left(uint16_t ticks) {
+void turn_left_forward(uint16_t ticks) {
     left_encoder = 0;
     right_encoder = 0;
     set_servo(RIGHT_SERVO, MOTOR_STOP - TURN_SPEED);
 
     while (left_encoder < ticks) { // For some reason left works...
-        clear_screen();
-        lcd_cursor(0, 0);
-        print_string("L:");
-        print_num(left_encoder);
-        lcd_cursor(0, 1);
-        print_string("R:");
-        print_num(right_encoder);
+        display(); 
         _delay_ms(100);
     }
     
-    set_motor(0, 0);
-    set_motor(1, 0);
+    stop();
+}
+
+void turn_right_backward(uint16_t ticks){
+    left_encoder = 0;
+    right_encoder = 0;
+    set_servo(LEFT_SERVO, MOTOR_STOP - TURN_SPEED);
+    
+    while (right_encoder < ticks) { // For some reason left works...
+        display(); 
+        _delay_ms(100);
+    }
+    
+    stop(); 
+}
+
+void turn_left_backward(uint16_t ticks) {
+    left_encoder = 0;
+    right_encoder = 0;
+    set_servo(RIGHT_SERVO, MOTOR_STOP + TURN_SPEED);
+
+    while (left_encoder < ticks) { // For some reason left works...
+        display(); 
+        _delay_ms(100);
+    }
+    
+    stop();
 }
 
 void stop(){
@@ -145,7 +166,7 @@ void drive_square() {
             lcd_cursor(0, 0);
             print_string("Left");
             _delay_ms(1000);
-            turn_right(TURN_TICKS);
+            turn_right_forward(TURN_TICKS);
             stop();
         }
     }
@@ -160,27 +181,52 @@ void drive_bowtie() {
     
     // logic to drive the bowtie 
     move_straight(STRAIGHT_TICKS);  // goes up the line then turns right on the first corner 
-    turn_right(BOW_TURN_TICKS); 
+    stop();
+    _delay_ms(1000);
+
+    turn_right_forward(75); 
     stop();
     _delay_ms(1000);
 
 
-    move_straight(DIAGONAL_TICKS - 10); // moves diagonal across to the second corner, then turns left 
-    turn_left(BOW_TURN_TICKS - 10);
+    move_straight(105); // moves diagonal across to the second corner, then turns left 
     stop();
     _delay_ms(1000);
 
 
-    move_straight(STRAIGHT_TICKS - 20); // moves diagonal across to the third corner, then turns left 
-    turn_left(BOW_TURN_TICKS);
+    turn_left_forward(40);
+    stop();
+    _delay_ms(1000);
+ 
+ 
+    turn_right_backward(40);
     stop();
     _delay_ms(1000);
 
-    
-    move_straight(DIAGONAL_TICKS + 20); // moves diagonal across to the second corner, then turns left 
-    turn_right(BOW_TURN_TICKS); 
+
+    move_straight(94); // moves diagonal across to the third corner, then turns left 
     stop();
     _delay_ms(1000);
+
+
+    turn_left_forward(40);
+    stop();
+    _delay_ms(1000);
+ 
+ 
+    turn_right_backward(45);
+    stop();
+    _delay_ms(1000);
+
+
+    move_straight(160); // moves diagonal across to the second corner, then turns left 
+    stop();
+    _delay_ms(1000);
+
+    // move_straight(DIAGONAL_TICKS + 20); // moves diagonal across to the second corner, then turns left 
+    // turn_right_forward(BOW_TURN_TICKS); 
+    // stop();
+    // _delay_ms(1000);
     
     clear_screen();
     lcd_cursor(0, 0);
@@ -213,16 +259,24 @@ int main(void) {
     
     while(1) {
         // Show current pattern
+        bool state = false; 
         clear_screen();
         lcd_cursor(0, 0);
         
         print_string("Waiting");
-        
-        // Wait for button press
-        if (get_btn()) {
-            drive_bowtie(); 
+
+        // If the button is pressed, change the state 
+        if (get_btn()) { 
+            state = !state;
         }
-        
+
+        // Driving mode selector (based on button press)
+        if (!state) {
+            drive_square(); 
+        }
+        else {
+            drive_bowtie();
+        }
         _delay_ms(100);
     }
     
