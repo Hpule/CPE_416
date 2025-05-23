@@ -94,7 +94,7 @@ void turn_right_forward(uint16_t ticks) {
     set_servo(LEFT_SERVO, MOTOR_STOP + TURN_SPEED);
     set_servo(RIGHT_SERVO, MOTOR_STOP + TURN_SPEED);
     
-    while (right_encoder < ticks) { // For some reason left works...
+    while (left_encoder < ticks && right_encoder < ticks) { // For some reason left works...
         display(); 
         _delay_ms(100);
     }
@@ -108,7 +108,7 @@ void turn_left_forward(uint16_t ticks) {
     set_servo(LEFT_SERVO, MOTOR_STOP - TURN_SPEED);
     set_servo(RIGHT_SERVO, MOTOR_STOP - TURN_SPEED);
 
-    while (left_encoder < ticks) { // For some reason left works...
+    while (left_encoder < ticks && right_encoder < ticks) { // For some reason left works...
         display(); 
         _delay_ms(100);
     }
@@ -166,7 +166,7 @@ void drive_bowtie() {
     _delay_ms(1000);
     
     // logic to drive the bowtie 
-    move_straight(100);  // goes up the line then turns right on the first corner 
+    move_straight(110);  // goes up the line then turns right on the first corner 
     stop();
     _delay_ms(1000);
 
@@ -180,7 +180,7 @@ void drive_bowtie() {
     _delay_ms(1000);
 
 
-    turn_left_forward(25);
+    turn_left_forward(38);
     stop();
     _delay_ms(1000);
 
@@ -188,13 +188,15 @@ void drive_bowtie() {
     stop();
     _delay_ms(1000);
 
-    turn_left_forward(24);
+    turn_left_forward(38);
     stop();
     _delay_ms(1000);
 
     move_straight(150); // moves diagonal across to the second corner, then turns left 
     stop();
     _delay_ms(1000);
+    
+    turn_right_forward(38);
 
     // move_straight(130); // moves diagonal across to the second corner, then turns left 
     // stop();
